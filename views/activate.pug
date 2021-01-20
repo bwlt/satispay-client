@@ -1,0 +1,26 @@
+extends layout.pug
+
+block content
+  h1 Satispay API demo
+  form.row.g-3.w-100(method="POST" action="/activate")
+    label.form-label.text-capitalize
+      | environment:<br />
+      select.form-select(name="environment")
+        option(value="sandbox") Sandbox
+        option(value="production") Production
+    label.form-label.text-capitalize
+      | activation code:<br />
+      input.form-control(
+        autofocus
+        name="activation_code"
+        placeholder="Insert an activation code"
+        type="text"
+        required
+        pattern="^[0-9A-Z]{6}$"
+        title="6 digits code"
+      )
+    .col-12
+      if error
+        .alert.alert-danger(role="alert")= error
+    .col-12
+      input.w-100.btn.btn-primary(type="submit")
