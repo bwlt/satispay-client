@@ -2312,9 +2312,9 @@ resolve@^1.15.1:
   languageName: node
   linkType: hard
 
-"satispay-api-demo@workspace:.":
+"satispay-api-demo-dev@workspace:.":
   version: 0.0.0-use.local
-  resolution: "satispay-api-demo@workspace:."
+  resolution: "satispay-api-demo-dev@workspace:."
   dependencies:
     "@types/express": ^4.17.11
     "@types/express-session": ^1.17.3
@@ -2327,7 +2327,7 @@ resolve@^1.15.1:
     ts-node: ^9.1.1
     typescript: ^4.1.3
   bin:
-    satispay-api-demo: src/bin.js
+    satispay-api-demo-dev: src/bin.js
   languageName: unknown
   linkType: soft
 

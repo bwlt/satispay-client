@@ -1,16 +1,13 @@
 import { Handler, RequestHandler } from "express";
 import { render, wrapAsyncHandler } from "../lib/express";
 import { httpClient, signedClient } from "../lib/request";
-import { postPayment } from "../lib/satispay";
+import { postAuthorization } from "../lib/satispay";
 
 export const get: Handler = (_, res) =>
-  render(res, "api-create-payment", {
+  render(res, "api-create-authorization", {
     body: JSON.stringify({
-      flow: "MATCH_CODE",
-      amount_unit: 100,
-      currency: "EUR",
-      external_code: "my_order_id",
-      callback_url: "https://myServer.com/myCallbackUrl?payment_id={uuid}",
+      reason: "Monthly payment",
+      callback_url: "https://myServer.com/myCallbackUrl/{uuid}",
       metadata: {
         redirect_url: "https://myServer.com/myRedirectUrl",
         order_id: "my_order_id",
@@ -32,10 +29,10 @@ export const post = wrapAsyncHandler(<
   if (!req.session.data) return next(new Error("Missing session data"));
   const { environment, keyId, privateKey } = req.session.data;
   const body = JSON.stringify(JSON.parse(req.body.body));
-  const httpResponse = await postPayment({
+  const httpResponse = await postAuthorization({
     environment,
     body,
     client: signedClient({ keyId, privateKey })(httpClient),
   });
-  return render(res, "api-create-payment", { body, httpResponse });
+  return render(res, "api-create-authorization", { body, httpResponse });
 }));

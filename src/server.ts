@@ -15,4 +15,5 @@ process.addListener("unhandledRejection", (err) => {
 const server = app.listen(port, () => {
   const serverUrl = getServerUrl(server);
   exec(`open ${serverUrl}`);
+  console.log(`> Server started on ${serverUrl}`);
 });

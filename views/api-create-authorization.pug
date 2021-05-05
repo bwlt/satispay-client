@@ -1,0 +1,36 @@
+extends layout.pug
+
+block content
+  h1 Create Authorization
+  form.w-100.mb-3(method="POST" action="/api-create-authorization")
+    label.form-label.text-capitalize
+      | body:
+    - const bodyString = JSON.stringify(JSON.parse(body), null, 2)
+    - const rows = bodyString.split('\n').length
+    textarea.form-control.mb-3(name="body" rows=rows) !{bodyString}
+
+    input.w-100.btn.btn-primary.mb-3(type="submit")
+
+    if httpResponse
+      hr
+      h2 Response
+        | 
+        if httpResponse.statusCode === 200
+          span.badge.bg-success 200
+        else
+          span.badge.bg-danger= httpResponse.statusCode
+      .card.mb-3
+        .card-header headers
+        .card-body
+          ul.list-group.list-group-flush
+            each value, name in httpResponse.headers
+              - console.log({value, name})
+              li.list-group-item
+                | #{name}: #{JSON.stringify(value)}
+      
+      - const responseBody = JSON.stringify(JSON.parse(httpResponse.data), null, 2)
+      - const rows = responseBody.split('\n').length
+      .card
+        .card-header body
+        .card-body
+          pre.mb-0= responseBody

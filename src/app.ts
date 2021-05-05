@@ -31,4 +31,11 @@ export const app = express()
     routes.apiCreatePayment.post
   )
 
+  .get("/api-create-authorization", routes.apiCreateAuthorization.get)
+  .post(
+    "/api-create-authorization",
+    bodyParser.urlencoded({ extended: false }),
+    routes.apiCreateAuthorization.post
+  )
+
   .get("*", (_req, res) => res.redirect("/"));

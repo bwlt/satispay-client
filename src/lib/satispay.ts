@@ -27,6 +27,23 @@ export function postAuthenticationKeys(args: {
   });
 }
 
+export function postAuthorization(args: {
+  environment: "sandbox" | "production";
+  client: HttpClient;
+  body: string;
+}): Promise<HttpResponse> {
+  const url = getUrl("/g_business/v1/pre_authorized_payment_tokens", args.environment);
+  return args.client({
+    url,
+    options: {
+      body: args.body,
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  });
+}
+
+
 export function postPayment(args: {
   environment: "sandbox" | "production";
   client: HttpClient;
