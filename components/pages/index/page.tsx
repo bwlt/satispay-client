@@ -1,12 +1,12 @@
 import { either as E, ioOption as IO, json as J } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import { Predicate } from "fp-ts/lib/Predicate";
 import * as t from "io-ts";
 import {
   ChangeEventHandler,
   FormEventHandler,
   useCallback,
-  useReducer
+  useReducer,
 } from "react";
 import { match } from "ts-pattern";
 import { useMutation } from "../../../modules/react";
@@ -17,7 +17,12 @@ import { Select } from "../../select";
 import { BodyControls } from "./body-controls";
 import { EntityIDControls } from "./entity-id-controls";
 
-const Api = t.keyof({ "create-payment": null, "get-payment-details": null });
+const Api = t.keyof({
+  "create-payment": null,
+  "get-payment-details": null,
+  "update-payment": null,
+  "create-authorization": null,
+});
 
 type Api = t.TypeOf<typeof Api>;
 
@@ -27,21 +32,47 @@ type FormState = {
     "create-payment": {
       body: string;
     };
+    "update-payment": {
+      entityID: string;
+      body: string;
+    };
     "get-payment-details": {
-      paymentID: string;
+      entityID: string;
+    };
+    "create-authorization": {
+      body: string;
     };
   };
 };
 
+type ApiWithBody = {
+  [K in keyof FormState["payload"]]: FormState["payload"][K] extends {
+    body: string;
+  }
+    ? K
+    : never;
+}[keyof FormState["payload"]];
+
+type ApiWithEntityID = {
+  [K in keyof FormState["payload"]]: FormState["payload"][K] extends {
+    entityID: string;
+  }
+    ? K
+    : never;
+}[keyof FormState["payload"]];
+
 type Action =
   | { type: "change-api"; payload: { api: Api } }
   | {
-      type: "change-create-payment-body";
-      payload: { body: string };
+      type: "change-body";
+      payload: {
+        api: ApiWithBody;
+        body: string;
+      };
     }
   | {
-      type: "change-get-payment-details-payment-id";
-      payload: { paymentID: string };
+      type: "change-entity-id";
+      payload: { api: ApiWithEntityID; entityID: string };
     };
 
 function reducer(state: FormState, action: Action): FormState {
@@ -50,38 +81,49 @@ function reducer(state: FormState, action: Action): FormState {
       api: action.payload.api,
       payload: state.payload,
     }))
-    .with({ type: "change-create-payment-body" }, (action) => ({
+    .with({ type: "change-body" }, (action) => ({
       api: state.api,
       payload: {
         ...state.payload,
-        "create-payment": {
+        [action.payload.api]: {
+          ...state.payload[action.payload.api],
           body: action.payload.body,
         },
       },
     }))
-    .with({ type: "change-get-payment-details-payment-id" }, (action) => ({
+    .with({ type: "change-entity-id" }, (action) => ({
       api: state.api,
       payload: {
         ...state.payload,
-        "get-payment-details": {
-          paymentID: action.payload.paymentID,
+        [action.payload.api]: {
+          ...state.payload[action.payload.api],
+          entityID: action.payload.entityID,
         },
-      },
+      } satisfies FormState["payload"],
     }))
     .exhaustive();
 }
 
-const isValid: Predicate<FormState> = (formState) =>
-  match(formState)
-    .with({ api: "create-payment" }, ({ api, payload }) =>
-      pipe(payload[api].body, J.parse, E.isRight)
+const isValid: Predicate<FormState> = (formState) => {
+  const isValidBody: Predicate<string> = flow(J.parse, E.isRight);
+  const isValidEntityId: Predicate<string> = (s) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  return match(formState)
+    .with(
+      { api: "create-payment" },
+      { api: "create-authorization" },
+      ({ api, payload }) => isValidBody(payload[api].body)
+    )
+    .with(
+      { api: "update-payment" },
+      ({ api, payload }) =>
+        isValidBody(payload[api].body) && isValidEntityId(payload[api].entityID)
     )
     .with({ api: "get-payment-details" }, ({ api, payload }) =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        payload[api].paymentID
-      )
+      isValidEntityId(payload[api].entityID)
     )
     .exhaustive();
+};
 
 const initialFormState: FormState = {
   api: "create-payment",
@@ -98,18 +140,33 @@ const initialFormState: FormState = {
       ),
     },
     "get-payment-details": {
-      paymentID: "<payment_id>",
+      entityID: "<payment_id>",
+    },
+    "update-payment": {
+      entityID: "<payment_id>",
+      body: JSON.stringify(
+        {
+          action: "ACCEPT",
+          metadata: {},
+        },
+        null,
+        2
+      ),
+    },
+    "create-authorization": {
+      body: JSON.stringify(
+        {
+          reason: "",
+          callback_url: "",
+          redirect_url: "",
+          metadata: {},
+        },
+        null,
+        2
+      ),
     },
   },
 };
-
-type ApiWithBody = {
-  [K in keyof FormState["payload"]]: FormState["payload"][K] extends {
-    body: string;
-  }
-    ? K
-    : never;
-}[keyof FormState["payload"]];
 
 export const Page: React.FC = () => {
   const [formState, dispatch] = useReducer(reducer, initialFormState);
@@ -145,13 +202,18 @@ export const Page: React.FC = () => {
     (ev) => {
       ev.preventDefault();
       const data = match<FormState["api"], InvokeBody>(formState.api)
-        .with("create-payment", () => ({
-          api: "create-payment",
-          body: JSON.parse(formState.payload["create-payment"].body),
+        .with("create-payment", "create-authorization", (api) => ({
+          api,
+          body: JSON.parse(formState.payload[api].body),
         }))
         .with("get-payment-details", () => ({
           api: "get-payment-details",
-          paymentID: formState.payload["get-payment-details"].paymentID,
+          entityID: formState.payload["get-payment-details"].entityID,
+        }))
+        .with("update-payment", () => ({
+          api: "update-payment",
+          entityID: formState.payload["update-payment"].entityID,
+          body: JSON.parse(formState.payload["update-payment"].body),
         }))
         .exhaustive();
       mutation.mutate(data);
@@ -159,16 +221,17 @@ export const Page: React.FC = () => {
     [formState, mutation]
   );
 
-  const handleBodyChange = (api: ApiWithBody) => (value: string) => {
-    match(api)
-      .with("create-payment", () =>
-        dispatch({
-          type: "change-create-payment-body",
-          payload: { body: value },
-        })
-      )
-      .exhaustive();
-  };
+  const handleEntityIDChange = (api: ApiWithEntityID) => (value: string) =>
+    dispatch({
+      type: "change-entity-id",
+      payload: { api, entityID: value },
+    });
+
+  const handleBodyChange = (api: ApiWithBody) => (value: string) =>
+    dispatch({
+      type: "change-body",
+      payload: { api, body: value },
+    });
 
   return (
     <div className="w-full flex gap-4">
@@ -180,31 +243,39 @@ export const Page: React.FC = () => {
             value={formState.api}
             onChange={handleApiChange}
           >
-            <option value="create-payment">Create payment</option>
-            <option value="get-payment-details">Get payment details</option>
+            <optgroup label="Payments">
+              <option value="create-payment">Create payment</option>
+              <option value="get-payment-details">Get payment details</option>
+              <option value="update-payment">Update payment</option>
+            </optgroup>
+            <optgroup label="Pre-Authorized">
+              <option value="create-authorization">Create authorization</option>
+            </optgroup>
           </Select>
         </FormItem>
-        {match(formState)
-          .with({ api: "create-payment" }, (formState) => (
-            <BodyControls
-              isDisabled={!isValid(formState)}
-              value={formState.payload[formState.api].body}
-              onChange={handleBodyChange(formState.api)}
-            />
-          ))
-          .with({ api: "get-payment-details" }, (formState) => (
+        {match(formState.api)
+          .with("get-payment-details", "update-payment", (api) => (
             <EntityIDControls
-              label="Payment ID"
-              value={formState.payload[formState.api].paymentID}
-              onChange={(value) =>
-                dispatch({
-                  type: "change-get-payment-details-payment-id",
-                  payload: { paymentID: value },
-                })
-              }
+              label="Entity ID"
+              value={formState.payload[api].entityID}
+              onChange={handleEntityIDChange(api)}
             />
           ))
-          .exhaustive()}
+          .otherwise(() => null)}
+        {match(formState.api)
+          .with(
+            "create-payment",
+            "create-authorization",
+            "update-payment",
+            (api) => (
+              <BodyControls
+                isDisabled={!isValid(formState)}
+                value={formState.payload[api].body}
+                onChange={handleBodyChange(api)}
+              />
+            )
+          )
+          .otherwise(() => null)}
         <Button disabled={!isValid(formState)} isLoading={mutation.isLoading}>
           Submit
         </Button>

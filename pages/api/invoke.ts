@@ -1,25 +1,30 @@
-import { taskEither as TE, task as T, either as E } from "fp-ts";
-import { hole, pipe } from "fp-ts/lib/function";
+import { either as E, task as T, taskEither as TE } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { match } from "ts-pattern";
 import {
+  collectHeaders,
   httpClient,
   makeLoggedClient,
   makeSignedHttpClient,
 } from "../../modules/http";
-import { collectHeaders } from "../../modules/http";
 import { ENDPOINTS } from "../../modules/satispay";
 import { getAuth, isAuthenticated } from "../../modules/session";
 
 export const InvokeBody = t.union([
   t.type({
-    api: t.literal("create-payment"),
-    body: t.unknown,
+    api: t.keyof({ "create-payment": null, "create-authorization": null }),
+    body: t.record(t.string, t.unknown),
   }),
   t.type({
     api: t.literal("get-payment-details"),
-    paymentID: t.string,
+    entityID: t.string,
+  }),
+  t.type({
+    api: t.literal("update-payment"),
+    entityID: t.string,
+    body: t.record(t.string, t.unknown),
   }),
 ]);
 
@@ -58,36 +63,55 @@ export default function handler(
         })
       )
     ),
-    TE.bind("response", ({ body, auth, httpClient }) =>
-      match(body)
-        .with({ api: "create-payment" }, ({ body }) =>
-          httpClient.request(
-            new URL("/g_business/v1/payments", ENDPOINTS[auth.endpoint]),
-            {
+    TE.bind("response", ({ body, auth, httpClient }) => {
+      const base = ENDPOINTS[auth.endpoint];
+      const makeUrl = (path: string) => new URL(path, base);
+      const path = match(body)
+        .with(
+          { api: "create-authorization" },
+          () => "/g_business/v1/pre_authorized_payment_tokens"
+        )
+        .with({ api: "create-payment" }, () => "/g_business/v1/payments")
+        .with(
+          { api: "get-payment-details" },
+          { api: "update-payment" },
+          ({ entityID }) => `/g_business/v1/payments/${entityID}`
+        )
+        .exhaustive();
+      const url = new URL(path, base);
+      return match(body)
+        .with(
+          { api: "create-payment" },
+          { api: "create-authorization" },
+          ({ body }) =>
+            httpClient.request(url, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
               },
               body: JSON.stringify(body),
-            }
-          )
+            })
         )
-        .with({ api: "get-payment-details" }, ({ paymentID }) =>
-          httpClient.request(
-            new URL(
-              `/g_business/v1/payments/${paymentID}`,
-              ENDPOINTS[auth.endpoint]
-            ),
-            {
-              headers: {
-                Accept: "application/json",
-              },
-            }
-          )
+        .with({ api: "get-payment-details" }, () =>
+          httpClient.request(url, {
+            headers: {
+              Accept: "application/json",
+            },
+          })
         )
-        .exhaustive()
-    ),
+        .with({ api: "update-payment" }, ({ body }) =>
+          httpClient.request(url, {
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            method: "PUT",
+            body: JSON.stringify(body),
+          })
+        )
+        .exhaustive();
+    }),
     TE.bind("responseBody", ({ response }) =>
       TE.tryCatch(() => response.text(), E.toError)
     ),
