@@ -6,6 +6,8 @@ import next from "next";
 import path from "path";
 import type net from "net";
 
+const port = process.env["PORT"] ? parseInt(process.env["PORT"]) : undefined;
+
 function getDir() {
   const url = new URL(import.meta.url);
   return path.dirname(url.pathname);
@@ -28,7 +30,7 @@ function isAddressInfo(
   return typeof a !== "string";
 }
 
-server.listen(() => {
+server.listen(port, () => {
   const address = server.address();
   if (!isAddressInfo(address)) throw new Error("Invalid address");
   const localUrl = `http://localhost:${address.port}`;
