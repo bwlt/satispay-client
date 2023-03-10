@@ -1,14 +1,14 @@
 {
-  "name": "satispay-client",
-  "version": "3.0.0-alpha.1",
+  "name": "satispay-api-demo-dev",
+  "version": "3.0.0-alpha.11",
   "description": "",
-  "main": "index.js",
   "bin": "./cli.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev",
     "build:cli": "tsc -p tsconfig.cli.json",
-    "build": "pnpm run build:cli && next build",
+    "build": "rimraf .next && pnpm run build:cli && next build",
+    "prepare": "pnpm run build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -27,7 +27,7 @@
     "classnames": "^2.3.2",
     "fp-ts": "^2.13.1",
     "io-ts": "^2.2.20",
-    "next": "^13.1.6",
+    "next": "~13.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "ts-pattern": "^4.2.1",
@@ -43,6 +43,7 @@
     "eslint-config-prettier": "^8.7.0",
     "msw": "^1.1.0",
     "postcss": "^8.4.21",
+    "rimraf": "^4.4.0",
     "tailwindcss": "^3.2.7"
   },
   "volta": {

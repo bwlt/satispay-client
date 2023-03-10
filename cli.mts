@@ -3,13 +3,18 @@
 import { execSync } from "child_process";
 import http from "http";
 import next from "next";
+import path from "path";
 import type net from "net";
 
-const app = next({ dev: false });
+function getDir() {
+  const url = new URL(import.meta.url);
+  return path.dirname(url.pathname);
+}
+
+const app = next({ dir: getDir() });
 const handle = app.getRequestHandler();
 
 await app.prepare();
-
 const server = http.createServer(handle);
 
 server.once("error", (err) => {
