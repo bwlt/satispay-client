@@ -1,12 +1,14 @@
 {
   "name": "satispay-client",
-  "version": "3.0.0",
+  "version": "3.0.0-alpha.1",
   "description": "",
   "main": "index.js",
+  "bin": "./cli.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev",
-    "build": "next build",
+    "build:cli": "tsc -p tsconfig.cli.json",
+    "build": "pnpm run build:cli && next build",
     "start": "next start",
     "lint": "next lint"
   },
