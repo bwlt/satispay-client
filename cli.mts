@@ -5,6 +5,9 @@ import http from "http";
 import next from "next";
 import path from "path";
 import type net from "net";
+import pkg from "./package.json" assert { type: "json" };
+
+console.log(`${pkg.name}@${pkg.version}`);
 
 const port = process.env["PORT"] ? parseInt(process.env["PORT"]) : undefined;
 
@@ -36,7 +39,7 @@ server.listen(port, () => {
   const localUrl = `http://localhost:${address.port}`;
   console.log(`> Ready on ${localUrl}`);
   try {
-    execSync(`open ${localUrl}`);
+    execSync(`open ${localUrl}`, { stdio: "ignore" });
   } catch (error) {
     //
   }

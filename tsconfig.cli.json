@@ -3,7 +3,7 @@
   "display": "Node 18 + ESM + Strictest",
   "compilerOptions": {
     "lib": ["es2022"],
-    "module": "es2022",
+    "module": "esnext",
     "target": "es2022",
     "strict": true,
     "esModuleInterop": true,
@@ -18,7 +18,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
     "importsNotUsedAsValues": "error",
-    "checkJs": true
+    "checkJs": true,
+    "resolveJsonModule": true
   },
   "include": ["./cli.mts"]
 }
