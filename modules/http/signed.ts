@@ -1,6 +1,6 @@
 import { date, either, string, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
-import crypto from "node:crypto";
+import crypto from "crypto";
 import { HttpClient } from "./client";
 
 function deindent(s: string) {
