@@ -1,5 +1,5 @@
 import { option } from "fp-ts";
-import { flow, pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/function";
 import * as t from 'io-ts';
 import * as atLeastTwoArray from "../../../helpers/at-least-two-array";
 import { unsafeUnwrap } from "../../../lib/fp-ts/Option";

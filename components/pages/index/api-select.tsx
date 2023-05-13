@@ -1,5 +1,5 @@
 import { array, ioOption, nonEmptyArray, ord, record } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/function";
 import { ChangeEventHandler, useCallback } from "react";
 import { Select } from "../../select";
 import { Api } from "./Api";

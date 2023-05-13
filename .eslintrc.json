@@ -1,3 +1,4 @@
 {
-  "extends": ["next/core-web-vitals", "prettier"]
+  "plugins": ["fp-ts"],
+  "extends": ["next/core-web-vitals", "prettier", "plugin:fp-ts/recommended"]
 }

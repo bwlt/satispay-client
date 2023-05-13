@@ -1,6 +1,6 @@
 import { either, json } from "fp-ts";
-import { Predicate } from "fp-ts/lib/Predicate";
-import { flow, pipe } from "fp-ts/lib/function";
+import { Predicate } from "fp-ts/Predicate";
+import { flow, pipe } from "fp-ts/function";
 import {
   FormEventHandler,
   useCallback,

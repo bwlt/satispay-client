@@ -1,5 +1,5 @@
 import { either, task, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/function";
 import * as t from "io-ts";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { match } from "ts-pattern";

@@ -1,5 +1,5 @@
 import { either as E, ioOption as IO, json as J, option as O } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/function";
 import {
   ChangeEventHandler,
   MouseEventHandler,
