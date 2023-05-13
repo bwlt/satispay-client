@@ -1,6 +1,7 @@
 import { either as E, task as T, taskEither as TE } from "fp-ts";
 import { flow, pipe } from "fp-ts/function";
 import type { NextApiRequest, NextApiResponse } from "next";
+import * as t from "io-ts";
 import { generateKeyPair } from "../../modules/crypto";
 import {
   httpClient,
@@ -10,7 +11,6 @@ import {
 } from "../../modules/http";
 import { ENDPOINTS, makeSatispayClient } from "../../modules/satispay";
 import { setAuthenticated } from "../../modules/session";
-import * as t from "io-ts";
 
 export const AuthenticateBody = t.type({
   env: t.keyof({ sandbox: null, production: null }),
