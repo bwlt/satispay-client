@@ -22,6 +22,9 @@ export const InvokeBody = t.union([
     entityID: t.string,
   }),
   t.type({
+    api: t.literal("get-list-of-payments"),
+  }),
+  t.type({
     api: t.literal("update-payment"),
     entityID: t.string,
     body: t.record(t.string, t.unknown),
@@ -68,13 +71,16 @@ export default function handler(
     ),
     taskEither.bind("response", ({ body, auth, httpClient }) => {
       const base = ENDPOINTS[auth.endpoint];
-      const makeUrl = (path: string) => new URL(path, base);
       const path = match(body)
         .with(
           { api: "create-authorization" },
           () => "/g_business/v1/pre_authorized_payment_tokens"
         )
-        .with({ api: "create-payment" }, () => "/g_business/v1/payments")
+        .with(
+          { api: "create-payment" },
+          { api: "get-list-of-payments" },
+          () => "/g_business/v1/payments"
+        )
         .with(
           { api: "get-payment-details" },
           { api: "update-payment" },
@@ -103,6 +109,7 @@ export default function handler(
             },
           })
         )
+        .with({ api: "get-list-of-payments" }, () => httpClient.request(url))
         .with({ api: "update-payment" }, ({ body }) =>
           httpClient.request(url, {
             headers: {

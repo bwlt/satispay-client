@@ -18,7 +18,7 @@ export function makeSignedHttpClient(args: {
   return (httpClient) => ({
     request(input, init) {
       const digest = pipe(
-        init.body ?? "",
+        init?.body ?? "",
         either.fromPredicate(
           string.isString,
           () => new Error("Unsupported body")
@@ -29,7 +29,7 @@ export function makeSignedHttpClient(args: {
         )
       );
       const signatureString = (args: { digest: string; date: Date }) => {
-        const method = init.method?.toLowerCase() ?? "get";
+        const method = init?.method?.toLowerCase() ?? "get";
         const url = new URL(input.toString());
         return deindent(`
           (request-target): ${method} ${url.pathname}
@@ -61,7 +61,7 @@ export function makeSignedHttpClient(args: {
           httpClient.request(input, {
             ...init,
             headers: {
-              ...init.headers,
+              ...init?.headers,
               Digest: digest,
               Date: date.toUTCString(),
               Authorization: authorizationHeader,

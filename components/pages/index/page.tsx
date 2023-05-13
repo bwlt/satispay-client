@@ -1,30 +1,20 @@
-import { either, ioOption, json } from "fp-ts";
+import { either, json } from "fp-ts";
 import { Predicate } from "fp-ts/lib/Predicate";
 import { flow, pipe } from "fp-ts/lib/function";
-import * as t from "io-ts";
 import {
-  ChangeEventHandler,
   FormEventHandler,
   useCallback,
-  useReducer,
+  useReducer
 } from "react";
 import { match } from "ts-pattern";
 import { useMutation } from "../../../modules/react";
 import { InvokeBody, InvokeResult } from "../../../pages/api/invoke";
 import { Button } from "../../button";
 import { FormItem } from "../../form-item";
-import { Select } from "../../select";
+import { Api } from "./Api";
+import { ApiSelect } from "./api-select";
 import { BodyControls } from "./body-controls";
 import { EntityIDControls } from "./entity-id-controls";
-
-const Api = t.keyof({
-  "create-payment": null,
-  "get-payment-details": null,
-  "update-payment": null,
-  "create-authorization": null,
-});
-
-type Api = t.TypeOf<typeof Api>;
 
 type FormState = {
   api: Api;
@@ -122,6 +112,11 @@ const isValid: Predicate<FormState> = (formState) => {
     .with({ api: "get-payment-details" }, ({ api, payload }) =>
       isValidEntityId(payload[api].entityID)
     )
+    .with(
+      { api: "get-list-of-payments" },
+      // no validation to perform
+      () => true
+    )
     .exhaustive();
 };
 
@@ -185,16 +180,8 @@ export const Page: React.FC = () => {
       )
   );
 
-  const handleApiChange: ChangeEventHandler<HTMLSelectElement> = useCallback(
-    (ev) =>
-      pipe(
-        ev.currentTarget.value,
-        ioOption.fromPredicate(Api.is),
-        ioOption.chainIOK(
-          (api) => () => dispatch({ type: "change-api", payload: { api } })
-        ),
-        (effect) => effect()
-      ),
+  const handleApiChange = useCallback(
+    (api: Api) => dispatch({ type: "change-api", payload: { api } }),
     []
   );
 
@@ -214,6 +201,9 @@ export const Page: React.FC = () => {
           api: "update-payment",
           entityID: formState.payload["update-payment"].entityID,
           body: JSON.parse(formState.payload["update-payment"].body),
+        }))
+        .with("get-list-of-payments", () => ({
+          api: "get-list-of-payments",
         }))
         .exhaustive();
       mutation.mutate(data);
@@ -238,20 +228,7 @@ export const Page: React.FC = () => {
       <form className="w-1/2 flex flex-col gap-4" onSubmit={handleSubmit}>
         <h3 className="text-lg">Request</h3>
         <FormItem label="Select API">
-          <Select
-            className="block w-full"
-            value={formState.api}
-            onChange={handleApiChange}
-          >
-            <optgroup label="Payments">
-              <option value="create-payment">Create payment</option>
-              <option value="get-payment-details">Get payment details</option>
-              <option value="update-payment">Update payment</option>
-            </optgroup>
-            <optgroup label="Pre-Authorized">
-              <option value="create-authorization">Create authorization</option>
-            </optgroup>
-          </Select>
+          <ApiSelect value={formState.api} onChange={handleApiChange} />
         </FormItem>
         {match(formState.api)
           .with("get-payment-details", "update-payment", (api) => (
