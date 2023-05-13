@@ -1,3 +1,4 @@
 /.next/
 /node_modules/
 /cli.mjs
+/tsconfig.tsbuildinfo
