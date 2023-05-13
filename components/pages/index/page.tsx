@@ -1,6 +1,6 @@
-import { either as E, ioOption as IO, json as J } from "fp-ts";
-import { flow, pipe } from "fp-ts/lib/function";
+import { either, ioOption, json } from "fp-ts";
 import { Predicate } from "fp-ts/lib/Predicate";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import {
   ChangeEventHandler,
@@ -105,7 +105,7 @@ function reducer(state: FormState, action: Action): FormState {
 }
 
 const isValid: Predicate<FormState> = (formState) => {
-  const isValidBody: Predicate<string> = flow(J.parse, E.isRight);
+  const isValidBody: Predicate<string> = flow(json.parse, either.isRight);
   const isValidEntityId: Predicate<string> = (s) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
   return match(formState)
@@ -189,8 +189,8 @@ export const Page: React.FC = () => {
     (ev) =>
       pipe(
         ev.currentTarget.value,
-        IO.fromPredicate(Api.is),
-        IO.chainIOK(
+        ioOption.fromPredicate(Api.is),
+        ioOption.chainIOK(
           (api) => () => dispatch({ type: "change-api", payload: { api } })
         ),
         (effect) => effect()
@@ -320,9 +320,9 @@ export const Page: React.FC = () => {
                 <pre className="block whitespace-pre-wrap bg-gray-100 p-4 rounded">
                   {pipe(
                     result.body,
-                    J.parse,
-                    E.map((json) => JSON.stringify(json, null, 2)),
-                    E.getOrElse(() => result.body)
+                    json.parse,
+                    either.map((json) => JSON.stringify(json, null, 2)),
+                    either.getOrElse(() => result.body)
                   )}
                 </pre>
               </FormItem>

@@ -1,6 +1,6 @@
-import crypto from "crypto";
-import { date as D, either as E, string as S, taskEither as TE } from "fp-ts";
+import { date, either, string, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
+import crypto from "node:crypto";
 import { HttpClient } from "./client";
 
 function deindent(s: string) {
@@ -19,8 +19,11 @@ export function makeSignedHttpClient(args: {
     request(input, init) {
       const digest = pipe(
         init.body ?? "",
-        E.fromPredicate(S.isString, () => new Error("Unsupported body")),
-        E.map(
+        either.fromPredicate(
+          string.isString,
+          () => new Error("Unsupported body")
+        ),
+        either.map(
           (s) =>
             `SHA-256=${crypto.createHash("sha256").update(s).digest("base64")}`
         )
@@ -47,14 +50,14 @@ export function makeSignedHttpClient(args: {
 
       return pipe(
         digest,
-        TE.fromEither,
-        TE.bindTo("digest"),
-        TE.bind("date", () => TE.fromIO(D.create)),
-        TE.let(
+        taskEither.fromEither,
+        taskEither.bindTo("digest"),
+        taskEither.bind("date", () => taskEither.fromIO(date.create)),
+        taskEither.let(
           "authorizationHeader",
           flow(signatureString, signature, authorizationHeader)
         ),
-        TE.chain(({ digest, date, authorizationHeader }) =>
+        taskEither.chain(({ digest, date, authorizationHeader }) =>
           httpClient.request(input, {
             ...init,
             headers: {

@@ -1,4 +1,4 @@
-import { either as E, task as T, taskEither as TE } from "fp-ts";
+import { either, task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -44,16 +44,19 @@ export default function handler(
 ) {
   return pipe(
     req.body,
-    TE.fromPredicate(InvokeBody.is, () => new Error("Invalid body")),
-    TE.bindTo("body"),
-    TE.bind("auth", () =>
+    taskEither.fromPredicate(InvokeBody.is, () => new Error("Invalid body")),
+    taskEither.bindTo("body"),
+    taskEither.bind("auth", () =>
       pipe(
         getAuth,
-        TE.fromIO,
-        TE.filterOrElse(isAuthenticated, () => new Error("Unauthenticated"))
+        taskEither.fromIO,
+        taskEither.filterOrElse(
+          isAuthenticated,
+          () => new Error("Unauthenticated")
+        )
       )
     ),
-    TE.let("httpClient", ({ auth }) =>
+    taskEither.let("httpClient", ({ auth }) =>
       pipe(
         httpClient,
         makeLoggedClient,
@@ -63,7 +66,7 @@ export default function handler(
         })
       )
     ),
-    TE.bind("response", ({ body, auth, httpClient }) => {
+    taskEither.bind("response", ({ body, auth, httpClient }) => {
       const base = ENDPOINTS[auth.endpoint];
       const makeUrl = (path: string) => new URL(path, base);
       const path = match(body)
@@ -112,10 +115,10 @@ export default function handler(
         )
         .exhaustive();
     }),
-    TE.bind("responseBody", ({ response }) =>
-      TE.tryCatch(() => response.text(), E.toError)
+    taskEither.bind("responseBody", ({ response }) =>
+      taskEither.tryCatch(() => response.text(), either.toError)
     ),
-    TE.chainIOK(
+    taskEither.chainIOK(
       ({ response, responseBody }) =>
         () =>
           res.status(200).json({
@@ -124,8 +127,8 @@ export default function handler(
             headers: collectHeaders(response.headers),
           })
     ),
-    TE.orElseFirstIOK((e) => () => console.error(e)),
-    TE.getOrElseW(() => T.fromIO(() => res.status(500).end())),
+    taskEither.orElseFirstIOK((e) => () => console.error(e)),
+    taskEither.getOrElseW(() => task.fromIO(() => res.status(500).end())),
     (effect) => effect()
   );
 }
