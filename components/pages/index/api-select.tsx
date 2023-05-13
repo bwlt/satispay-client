@@ -26,7 +26,7 @@ const options = pipe(
   })),
   nonEmptyArray.groupBy((a) => a.group),
   record.mapWithIndex((group, arr) => (
-    <optgroup label={group}>
+    <optgroup key={group} label={group}>
       {pipe(
         arr,
         array.map((a) => (
