@@ -5,8 +5,8 @@ export class GlobalRef<T> {
     this.sym = Symbol.for(uniqueName);
   }
 
-  get value() {
-    return (global as any)[this.sym] as T | undefined;
+  get value(): T {
+    return (global as any)[this.sym];
   }
 
   set value(value: T) {

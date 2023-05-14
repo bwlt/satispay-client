@@ -4,13 +4,17 @@ import { ChangeEventHandler, useCallback } from "react";
 import { Select } from "../../select";
 import { Api } from "./Api";
 
-type Group = "Payments" | "Pre-authorized";
+type Group = "Payments" | "Pre-authorized" | "Shop details";
 
 const optionsMap: Record<Api, { group: Group; label: string }> = {
   "create-payment": { group: "Payments", label: "Create payment" },
   "get-list-of-payments": { group: "Payments", label: "Get list of payment" },
   "get-payment-details": { group: "Payments", label: "Get payment detals" },
   "update-payment": { group: "Payments", label: "Update payment" },
+  "retrieve-daily-closure": {
+    group: "Shop details",
+    label: "Retrieve daily closure",
+  },
   "create-authorization": {
     group: "Pre-authorized",
     label: "Create authorization",

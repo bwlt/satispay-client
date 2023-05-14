@@ -29,6 +29,11 @@ export const InvokeBody = t.union([
     entityID: t.string,
     body: t.record(t.string, t.unknown),
   }),
+  t.type({
+    api: t.literal("retrieve-daily-closure"),
+    dailyClosureDate: t.string,
+    generatePdf: t.boolean,
+  }),
 ]);
 
 export type InvokeBody = t.TypeOf<typeof InvokeBody>;
@@ -86,6 +91,16 @@ export default function handler(
           { api: "update-payment" },
           ({ entityID }) => `/g_business/v1/payments/${entityID}`
         )
+        .with(
+          { api: "retrieve-daily-closure" },
+          ({ dailyClosureDate, generatePdf }) => {
+            const searchParams = new URLSearchParams();
+            if (generatePdf) searchParams.append("generate_pdf", "true");
+            return (
+              `/g_business/v1/daily_closure/${dailyClosureDate}?` + searchParams.toString()
+            );
+          }
+        )
         .exhaustive();
       const url = new URL(path, base);
       return match(body)
@@ -109,7 +124,11 @@ export default function handler(
             },
           })
         )
-        .with({ api: "get-list-of-payments" }, () => httpClient.request(url))
+        .with(
+          { api: "get-list-of-payments" },
+          { api: "retrieve-daily-closure" },
+          () => httpClient.request(url)
+        )
         .with({ api: "update-payment" }, ({ body }) =>
           httpClient.request(url, {
             headers: {

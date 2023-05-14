@@ -1,12 +1,9 @@
 import { either, json } from "fp-ts";
 import { Predicate } from "fp-ts/Predicate";
 import { flow, pipe } from "fp-ts/function";
-import {
-  FormEventHandler,
-  useCallback,
-  useReducer
-} from "react";
+import { FormEventHandler, useCallback, useReducer } from "react";
 import { match } from "ts-pattern";
+import * as fromDate from "../../../helpers/date";
 import { useMutation } from "../../../modules/react";
 import { InvokeBody, InvokeResult } from "../../../pages/api/invoke";
 import { Button } from "../../button";
@@ -15,8 +12,9 @@ import { Api } from "./Api";
 import { ApiSelect } from "./api-select";
 import { BodyControls } from "./body-controls";
 import { EntityIDControls } from "./entity-id-controls";
+import { RetrieveDailyClosureControls } from "./retrieve-daily-closure-controls";
 
-type FormState = {
+export type FormState = {
   api: Api;
   payload: {
     "create-payment": {
@@ -31,6 +29,10 @@ type FormState = {
     };
     "create-authorization": {
       body: string;
+    };
+    "retrieve-daily-closure": {
+      date: Date;
+      generatePdf: boolean;
     };
   };
 };
@@ -63,7 +65,18 @@ type Action =
   | {
       type: "change-entity-id";
       payload: { api: ApiWithEntityID; entityID: string };
+    }
+  | {
+      type: "change-payload";
+      payload: ChangePayloadActionPayload;
     };
+
+type ChangePayloadActionPayload<
+  Api extends keyof FormState["payload"] = keyof FormState["payload"]
+> = {
+  api: Api;
+  payload: FormState["payload"][Api];
+};
 
 function reducer(state: FormState, action: Action): FormState {
   return match<Action, FormState>(action)
@@ -91,6 +104,13 @@ function reducer(state: FormState, action: Action): FormState {
         },
       } satisfies FormState["payload"],
     }))
+    .with({ type: "change-payload" }, (action) => ({
+      ...state,
+      payload: {
+        ...state.payload,
+        [action.payload.api]: action.payload.payload,
+      },
+    }))
     .exhaustive();
 }
 
@@ -116,6 +136,12 @@ const isValid: Predicate<FormState> = (formState) => {
       { api: "get-list-of-payments" },
       // no validation to perform
       () => true
+    )
+    .with(
+      {
+        api: "retrieve-daily-closure",
+      },
+      ({ payload }) => fromDate.isValid(payload["retrieve-daily-closure"].date)
     )
     .exhaustive();
 };
@@ -159,6 +185,10 @@ const initialFormState: FormState = {
         null,
         2
       ),
+    },
+    "retrieve-daily-closure": {
+      date: new Date(),
+      generatePdf: true,
     },
   },
 };
@@ -205,6 +235,14 @@ export const Page: React.FC = () => {
         .with("get-list-of-payments", () => ({
           api: "get-list-of-payments",
         }))
+        .with("retrieve-daily-closure", () => ({
+          api: "retrieve-daily-closure",
+          dailyClosureDate: fromDate.format(
+            "yyyyMMdd",
+            formState.payload["retrieve-daily-closure"].date
+          ),
+          generatePdf: formState.payload["retrieve-daily-closure"].generatePdf,
+        }))
         .exhaustive();
       mutation.mutate(data);
     },
@@ -221,6 +259,14 @@ export const Page: React.FC = () => {
     dispatch({
       type: "change-body",
       payload: { api, body: value },
+    });
+
+  const handleRetrieveDailyClosureControlsChange = (
+    data: FormState["payload"]["retrieve-daily-closure"]
+  ) =>
+    dispatch({
+      type: "change-payload",
+      payload: { api: "retrieve-daily-closure", payload: data },
     });
 
   return (
@@ -252,6 +298,12 @@ export const Page: React.FC = () => {
               />
             )
           )
+          .with("retrieve-daily-closure", (api) => (
+            <RetrieveDailyClosureControls
+              value={formState.payload[api]}
+              onChange={handleRetrieveDailyClosureControlsChange}
+            />
+          ))
           .otherwise(() => null)}
         <Button disabled={!isValid(formState)} isLoading={mutation.isLoading}>
           Submit
