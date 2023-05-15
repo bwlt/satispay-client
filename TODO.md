@@ -5,8 +5,8 @@ Features:
 - Shop details
   - [x] Retrieve daily closure [(docs)](https://developers.satispay.com/reference/retrieve-daily-closure)
 - Pre-authorized
-  - [ ] Get authorization [(docs)](https://developers.satispay.com/reference/get-authorization)
-  - [ ] Update authorization [(docs)](https://developers.satispay.com/reference/update-authorization)
+  - [x] Get authorization [(docs)](https://developers.satispay.com/reference/get-authorization)
+  - [x] Update authorization [(docs)](https://developers.satispay.com/reference/update-authorization)
 - Sessions
   - [ ] Create mqtt certificates [(docs)](https://developers.satispay.com/reference/create-mqtt-certificates)
   - [ ] Open session [(docs)](https://developers.satispay.com/reference/open-session)

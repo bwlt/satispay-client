@@ -19,6 +19,14 @@ const optionsMap: Record<Api, { group: Group; label: string }> = {
     group: "Pre-authorized",
     label: "Create authorization",
   },
+  "get-authorization": {
+    group: "Pre-authorized",
+    label: "Get authorization",
+  },
+  "update-authorization": {
+    group: "Pre-authorized",
+    label: "Update authorization",
+  },
 };
 
 const options = pipe(

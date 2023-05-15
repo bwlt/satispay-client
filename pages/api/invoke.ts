@@ -18,14 +18,14 @@ export const InvokeBody = t.union([
     body: t.record(t.string, t.unknown),
   }),
   t.type({
-    api: t.literal("get-payment-details"),
+    api: t.keyof({ "get-payment-details": null, "get-authorization": null }),
     entityID: t.string,
   }),
   t.type({
     api: t.literal("get-list-of-payments"),
   }),
   t.type({
-    api: t.literal("update-payment"),
+    api: t.keyof({ "update-payment": null, "update-authorization": null }),
     entityID: t.string,
     body: t.record(t.string, t.unknown),
   }),
@@ -82,6 +82,12 @@ export default function handler(
           () => "/g_business/v1/pre_authorized_payment_tokens"
         )
         .with(
+          { api: "get-authorization" },
+          { api: "update-authorization" },
+          ({ entityID }) =>
+            `/g_business/v1/pre_authorized_payment_tokens/${entityID}`
+        )
+        .with(
           { api: "create-payment" },
           { api: "get-list-of-payments" },
           () => "/g_business/v1/payments"
@@ -97,7 +103,8 @@ export default function handler(
             const searchParams = new URLSearchParams();
             if (generatePdf) searchParams.append("generate_pdf", "true");
             return (
-              `/g_business/v1/daily_closure/${dailyClosureDate}?` + searchParams.toString()
+              `/g_business/v1/daily_closure/${dailyClosureDate}?` +
+              searchParams.toString()
             );
           }
         )
@@ -127,17 +134,21 @@ export default function handler(
         .with(
           { api: "get-list-of-payments" },
           { api: "retrieve-daily-closure" },
+          { api: "get-authorization" },
           () => httpClient.request(url)
         )
-        .with({ api: "update-payment" }, ({ body }) =>
-          httpClient.request(url, {
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            method: "PUT",
-            body: JSON.stringify(body),
-          })
+        .with(
+          { api: "update-payment" },
+          { api: "update-authorization" },
+          ({ body }) =>
+            httpClient.request(url, {
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              method: "PUT",
+              body: JSON.stringify(body),
+            })
         )
         .exhaustive();
     }),

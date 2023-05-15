@@ -20,15 +20,22 @@ export type FormState = {
     "create-payment": {
       body: string;
     };
+    "create-authorization": {
+      body: string;
+    };
     "update-payment": {
+      entityID: string;
+      body: string;
+    };
+    "update-authorization": {
       entityID: string;
       body: string;
     };
     "get-payment-details": {
       entityID: string;
     };
-    "create-authorization": {
-      body: string;
+    "get-authorization": {
+      entityID: string;
     };
     "retrieve-daily-closure": {
       date: Date;
@@ -126,11 +133,14 @@ const isValid: Predicate<FormState> = (formState) => {
     )
     .with(
       { api: "update-payment" },
+      { api: "update-authorization" },
       ({ api, payload }) =>
         isValidBody(payload[api].body) && isValidEntityId(payload[api].entityID)
     )
-    .with({ api: "get-payment-details" }, ({ api, payload }) =>
-      isValidEntityId(payload[api].entityID)
+    .with(
+      { api: "get-payment-details" },
+      { api: "get-authorization" },
+      ({ api, payload }) => isValidEntityId(payload[api].entityID)
     )
     .with(
       { api: "get-list-of-payments" },
@@ -160,8 +170,23 @@ const initialFormState: FormState = {
         2
       ),
     },
+    "create-authorization": {
+      body: JSON.stringify(
+        {
+          reason: "",
+          callback_url: "",
+          redirect_url: "",
+          metadata: {},
+        },
+        null,
+        2
+      ),
+    },
     "get-payment-details": {
       entityID: "<payment_id>",
+    },
+    "get-authorization": {
+      entityID: "<authorization_id>",
     },
     "update-payment": {
       entityID: "<payment_id>",
@@ -174,12 +199,11 @@ const initialFormState: FormState = {
         2
       ),
     },
-    "create-authorization": {
+    "update-authorization": {
+      entityID: "<authorization_id>",
       body: JSON.stringify(
         {
-          reason: "",
-          callback_url: "",
-          redirect_url: "",
+          action: "CANCELED",
           metadata: {},
         },
         null,
@@ -218,30 +242,42 @@ export const Page: React.FC = () => {
   const handleSubmit: FormEventHandler = useCallback(
     (ev) => {
       ev.preventDefault();
-      const data = match<FormState["api"], InvokeBody>(formState.api)
-        .with("create-payment", "create-authorization", (api) => ({
+      const data = match<FormState, InvokeBody>(formState)
+        .with(
+          { api: "create-payment" },
+          { api: "create-authorization" },
+          ({ api }) => ({
+            api,
+            body: JSON.parse(formState.payload[api].body),
+          })
+        )
+        .with(
+          { api: "get-payment-details" },
+          { api: "get-authorization" },
+          ({ api }) => ({
+            api,
+            entityID: formState.payload[api].entityID,
+          })
+        )
+        .with(
+          { api: "update-payment" },
+          { api: "update-authorization" },
+          ({ api }) => ({
+            api,
+            entityID: formState.payload[api].entityID,
+            body: JSON.parse(formState.payload[api].body),
+          })
+        )
+        .with({ api: "get-list-of-payments" }, ({ api }) => ({
           api,
-          body: JSON.parse(formState.payload[api].body),
         }))
-        .with("get-payment-details", () => ({
-          api: "get-payment-details",
-          entityID: formState.payload["get-payment-details"].entityID,
-        }))
-        .with("update-payment", () => ({
-          api: "update-payment",
-          entityID: formState.payload["update-payment"].entityID,
-          body: JSON.parse(formState.payload["update-payment"].body),
-        }))
-        .with("get-list-of-payments", () => ({
-          api: "get-list-of-payments",
-        }))
-        .with("retrieve-daily-closure", () => ({
-          api: "retrieve-daily-closure",
+        .with({ api: "retrieve-daily-closure" }, ({ api }) => ({
+          api,
           dailyClosureDate: fromDate.format(
             "yyyyMMdd",
-            formState.payload["retrieve-daily-closure"].date
+            formState.payload[api].date
           ),
-          generatePdf: formState.payload["retrieve-daily-closure"].generatePdf,
+          generatePdf: formState.payload[api].generatePdf,
         }))
         .exhaustive();
       mutation.mutate(data);
@@ -277,19 +313,26 @@ export const Page: React.FC = () => {
           <ApiSelect value={formState.api} onChange={handleApiChange} />
         </FormItem>
         {match(formState.api)
-          .with("get-payment-details", "update-payment", (api) => (
-            <EntityIDControls
-              label="Entity ID"
-              value={formState.payload[api].entityID}
-              onChange={handleEntityIDChange(api)}
-            />
-          ))
+          .with(
+            "get-payment-details",
+            "update-payment",
+            "update-authorization",
+            "get-authorization",
+            (api) => (
+              <EntityIDControls
+                label="Entity ID"
+                value={formState.payload[api].entityID}
+                onChange={handleEntityIDChange(api)}
+              />
+            )
+          )
           .otherwise(() => null)}
         {match(formState.api)
           .with(
             "create-payment",
             "create-authorization",
             "update-payment",
+            "update-authorization",
             (api) => (
               <BodyControls
                 isDisabled={!isValid(formState)}
