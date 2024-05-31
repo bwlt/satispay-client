@@ -16,7 +16,9 @@ const Authenticate: React.FC = (props) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       }),
-    { onSuccess: () => router.push("/") }
+    {
+      onSuccess: (e) => e.ok && router.push("/"),
+    }
   );
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = useCallback(
@@ -44,6 +46,17 @@ const Authenticate: React.FC = (props) => {
         <FormItem label="Activation code">
           <Input type="text" autoFocus name="code" className="block w-full" />
         </FormItem>
+
+        {mutation.lastResult?.ok === false && (
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+            role="alert"
+          >
+            <span className="block sm:inline">
+              {mutation.lastResult.statusText}
+            </span>
+          </div>
+        )}
         <Button className="mt-4" isLoading={mutation.isLoading}>
           Submit
         </Button>
