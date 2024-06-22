@@ -165,6 +165,7 @@ const initialFormState: FormState = {
           flow: "MATCH_CODE",
           amount_unit: 100,
           currency: "EUR",
+          redirect_url: "http://www.google.com",
         },
         null,
         2
@@ -174,8 +175,8 @@ const initialFormState: FormState = {
       body: JSON.stringify(
         {
           reason: "",
-          callback_url: "",
-          redirect_url: "",
+          callback_url: "http://www.google.it",
+          redirect_url: "http://www.google.it",
           metadata: {},
         },
         null,
